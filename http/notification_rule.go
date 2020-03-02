@@ -762,132 +762,33 @@ func NewNotificationRuleService(client *httpc.Client) *NotificationRuleService {
 	}
 }
 
-/*
-type: "pagerduty"
-every: "10m"
-offset: "0s"
-url: ""
-orgID: "7554d5ad97b0cd33"
-name: "just a little rule"
-activeStatus: "active"
-status: "active"
-endpointID: "04aa72fef0302000"
-tagRules: []
-labels: []
-statusRules: [{currentLevel: "CRIT", period: "1h", count: 1}]
-description: ""
-messageTemplate: "Notification Rule: ${ r._notification_rule_name } triggered by check: ${ r._check_name }: ${ r._message }"
-*/
-/*
-{
-"endpointID": "string",
-"orgID": "string",
-"status": "active",
-"name": "string",
-"sleepUntil": "string",
-"every": "string",
-"offset": "string",
-"runbookLink": "string",
-"limitEvery": 0,
-"limit": 0,
-"tagRules": [
-{}
-],
-"description": "string",
-"statusRules": [
-{}
-],
-"labels": [
-{}
-],
-"type": "PostNotificationRule",
-"channel": "string",
-"messageTemplate": "string"
-}
-*/
-
-// type NotificationRuleCreate struct {
-// 	EndpointID  string `json:"endpointID"`
-// 	OrgID       string `json:"orgID"`
-// 	Status      string `json:"status"`
-// 	Name        string `json:"name"`
-// 	SleepUntil  string `json:"sleepUntil"`
-// 	Every       string `json:"every"`
-// 	Offset      string `json:"offset"`
-// 	RunbookLink string `json:"runbookLink"`
-// 	LimitEvery  int    `json:"limitEvery"`
-// 	Limit       int    `json:"limit"`
-// 	// TagRules    []struct {
-// 	// 	Key      string `json:"key"`
-// 	// 	Value    string `json:"value"`
-// 	// 	Operator string `json:"operator"`
-// 	// } `json:"tagRules"`
-// 	Description     string                    `json:"description"`
-// 	StatusRules     []notification.StatusRule `json:"statusRules"`
-// 	Labels          []influxdb.Label          `json:"labels"`
-// 	Type            string                    `json:"type"`
-// 	Channel         string                    `json:"channel"`
-// 	MessageTemplate string                    `json:"messageTemplate"`
-// }
-
-// type NotificationRule struct {
-// 	ID          influxdb.ID `json:"id,omitempty"`
-// 	Name        string      `json:"name"`
-// 	Description string      `json:"description,omitempty"`
-// 	EndpointID  influxdb.ID `json:"endpointID,omitempty"`
-// 	OrgID       influxdb.ID `json:"orgID,omitempty"`
-// 	OwnerID     influxdb.ID `json:"ownerID,omitempty"`
-// 	TaskID      influxdb.ID `json:"taskID,omitempty"`
-// 	// SleepUntil is an optional sleeptime to start a task.
-// 	SleepUntil *time.Time             `json:"sleepUntil,omitempty"`
-// 	Every      *notification.Duration `json:"every,omitempty"`
-// 	// Offset represents a delay before execution.
-// 	// It gets marshalled from a string duration, i.e.: "10s" is 10 seconds
-// 	Offset      *notification.Duration    `json:"offset,omitempty"`
-// 	RunbookLink string                    `json:"runbookLink"`
-// 	TagRules    []notification.TagRule    `json:"tagRules,omitempty"`
-// 	StatusRules []notification.StatusRule `json:"statusRules,omitempty"`
-// 	*influxdb.Limit
-// 	influxdb.CRUDLog
-
-// 	// LatestCompleted time.Time `json:"latestCompleted"`
-// 	// // LastRunStatus   string                    `json:"lastRunStatus"`
-// 	// // LastRunError    string                    `json:"lastRunError"`
-// 	// CreatedAt time.Time `json:"createdAt"`
-// 	// UpdatedAt time.Time `json:"updatedAt"`
-// 	// Status    string    `json:"status"`
-
-// 	// Every  string `json:"every"`
-// 	// Offset string `json:"offset"`
-// 	// // RunbookLink     string                    `json:"runbookLink"`
-// 	// // LimitEvery      int                       `json:"limitEvery"`
-// 	// Limit int `json:"limit"`
-// 	// // TagRules        []*influxdb.Tag           `json:"tagRules"`
-// 	// StatusRules []notification.StatusRule `json:"statusRules"`
-// 	// // Labels          []*influxdb.Label         `json:"labels"`
-// 	// // Links           NotificationRuleLinks     `json:"links"`
-// 	// Type string `json:"type"`
-// 	// // Channel         string                    `json:"channel"`
-// 	// // MessageTemplate string                    `json:"messageTemplate"`
-// }
-
 func (s *NotificationRuleService) CreateNotificationRule(ctx context.Context, nr influxdb.NotificationRuleCreate, userID influxdb.ID) (notificationRuleResponse, error) {
 	var resp notificationRuleResponse
 	err := s.Client.
-		Post(httpc.BodyJSON(nr), prefixNotificationRules).
+		PostJSON(notificationRuleCreateEncoder{nrc: nr}, prefixNotificationRules).
 		DecodeJSON(&resp).
 		Do(ctx)
-
-	// nr.SetID(resp.NotificationRule.GetID())
-	// nr.SetOwnerID(userID)
-	// nr.SetCreatedAt(time.Now())
-	// nr.SetUpdatedAt(time.Now())
-	// nr.SetTaskID(resp.NotificationRule.GetTaskID())
 
 	return resp, err
 }
 
-var Test int
+type notificationRuleCreateEncoder struct {
+	nrc influxdb.NotificationRuleCreate
+}
+
+func (n notificationRuleCreateEncoder) MarshalJSON() ([]byte, error) {
+	b, err := n.nrc.NotificationRule.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	var v map[string]interface{}
+	err = json.Unmarshal(b, &v)
+	if err != nil {
+		return nil, err
+	}
+	v["status"] = n.nrc.Status
+	return json.Marshal(v)
+}
 
 func (s *NotificationRuleService) FindNotificationRuleByID(ctx context.Context, id influxdb.ID) (influxdb.NotificationRule, error) {
 	var resp notificationRuleResponse

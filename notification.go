@@ -105,6 +105,20 @@ type NotificationRuleCreate struct {
 	Status Status `json:"status"`
 }
 
+// func (nrc NotificationRuleCreate) MarshalJSON() ([]byte, error) {
+// 	b, err := nrc.NotificationRule.MarshalJSON()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	var v map[string]interface{}
+// 	err = json.Unmarshal(b, &v)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	v["status"] = nrc.Status
+// 	return json.Marshal(v)
+// }
+
 // NotificationRuleUpdate is the set of upgrade fields for patch request.
 type NotificationRuleUpdate struct {
 	Name        *string `json:"name,omitempty"`
